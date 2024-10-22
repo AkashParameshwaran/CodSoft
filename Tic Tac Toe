@@ -1,0 +1,105 @@
+import math
+
+# Function to print the board
+def print_board(board):
+    for row in range(3):
+        print(board[3 * row: 3 * (row + 1)])
+    print()
+
+# Function to check for winner
+def check_winner(board):
+    win_conditions = [(0, 1, 2), (3, 4, 5), (6, 7, 8),  # Rows
+                      (0, 3, 6), (1, 4, 7), (2, 5, 8),  # Columns
+                      (0, 4, 8), (2, 4, 6)]             # Diagonals
+    for a, b, c in win_conditions:
+        if board[a] == board[b] == board[c] and board[a] != '-':
+            return board[a]  # 'X' or 'O'
+    return None
+
+# Check if the board is full (draw condition)
+def is_draw(board):
+    return '-' not in board
+
+# Minimax algorithm
+def minimax(board, depth, is_maximizing):
+    winner = check_winner(board)
+    if winner == 'X':  # AI wins
+        return 1
+    if winner == 'O':  # Human wins
+        return -1
+    if is_draw(board):  # Draw
+        return 0
+
+    if is_maximizing:  # AI's turn (Maximizer)
+        best_score = -math.inf
+        for i in range(9):
+            if board[i] == '-':  # Empty space
+                board[i] = 'X'  # Try 'X'
+                score = minimax(board, depth + 1, False)  # Recurse
+                board[i] = '-'  # Undo the move
+                best_score = max(score, best_score)
+        return best_score
+    else:  # Human's turn (Minimizer)
+        best_score = math.inf
+        for i in range(9):
+            if board[i] == '-':  # Empty space
+                board[i] = 'O'  # Try 'O'
+                score = minimax(board, depth + 1, True)  # Recurse
+                board[i] = '-'  # Undo the move
+                best_score = min(score, best_score)
+        return best_score
+
+# Find the best move for the AI
+def find_best_move(board):
+    best_move = None
+    best_score = -math.inf
+    for i in range(9):
+        if board[i] == '-':  # Empty space
+            board[i] = 'X'  # AI tries 'X'
+            score = minimax(board, 0, False)
+            board[i] = '-'  # Undo the move
+            if score > best_score:
+                best_score = score
+                best_move = i
+    return best_move
+
+# Main game function to play against the AI
+def play_game():
+    board = ['-'] * 9  # Initialize an empty board
+    print("Welcome to Tic-Tac-Toe! You are 'O', and the AI is 'X'.")
+    print_board(board)
+
+    while True:
+        # Human's turn
+        move = int(input("Enter your move (0-8): "))
+        if board[move] != '-':
+            print("Invalid move. Try again.")
+            continue
+        board[move] = 'O'
+        print_board(board)
+
+        # Check if the human won
+        if check_winner(board) == 'O':
+            print("Congratulations, you won!")
+            break
+        elif is_draw(board):
+            print("It's a draw!")
+            break
+
+        # AI's turn
+        print("AI is making its move...")
+        ai_move = find_best_move(board)
+        board[ai_move] = 'X'
+        print_board(board)
+
+        # Check if the AI won
+        if check_winner(board) == 'X':
+            print("AI wins. Better luck next time!")
+            break
+        elif is_draw(board):
+            print("It's a draw!")
+            break
+
+# Run the game
+if __name__ == "__main__":
+    play_game()
