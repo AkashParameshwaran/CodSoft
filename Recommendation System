@@ -1,0 +1,66 @@
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Sample dataset: Users' ratings for different movies
+data = {
+    'User': ['User1', 'User1', 'User2', 'User2', 'User3', 'User3', 'User4', 'User4'],
+    'Movie': ['Inception', 'Titanic', 'Inception', 'Avatar', 'Titanic', 'Avatar', 'Titanic', 'Inception'],
+    'Rating': [5, 4, 4, 5, 3, 4, 5, 5]
+}
+ratings_df = pd.DataFrame(data)
+
+# Movies dataset with genres
+movies_data = {
+    'Movie': ['Inception', 'Titanic', 'Avatar', 'Interstellar', 'The Matrix'],
+    'Genre': ['Sci-Fi Thriller', 'Romance', 'Sci-Fi Adventure', 'Sci-Fi Drama', 'Sci-Fi Action']
+}
+movies_df = pd.DataFrame(movies_data)
+
+### Collaborative Filtering ###
+
+# Create a user-item matrixS
+user_movie_matrix = ratings_df.pivot_table(index='User', columns='Movie', values='Rating').fillna(0)
+
+# Calculate similarity between users
+user_similarity = cosine_similarity(user_movie_matrix)
+user_similarity_df = pd.DataFrame(user_similarity, index=user_movie_matrix.index, columns=user_movie_matrix.index)
+
+def recommend_collaborative(user, num_recommendations=2):
+    similar_users = user_similarity_df[user].sort_values(ascending=False).index[1:]
+    user_movies = user_movie_matrix.loc[user]
+    recommendations = pd.Series(dtype='float64')
+    
+    # Recommend movies highly rated by similar users
+    for similar_user in similar_users:
+        sim_user_movies = user_movie_matrix.loc[similar_user]
+        for movie in sim_user_movies.index:
+            if user_movies[movie] == 0:  # User hasn't watched this movie
+                recommendations[movie] = recommendations.get(movie, 0) + sim_user_movies[movie]
+                
+    return recommendations.sort_values(ascending=False).head(num_recommendations)
+
+# Recommendation for User1
+print("Collaborative Filtering Recommendation for User1:")
+print(recommend_collaborative('User1'))
+
+
+### Content-Based Filtering ###
+
+# Vectorize movie genres
+tfidf = TfidfVectorizer(stop_words='english')
+tfidf_matrix = tfidf.fit_transform(movies_df['Genre'])
+
+# Calculate similarity between movies
+cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
+cosine_sim_df = pd.DataFrame(cosine_sim, index=movies_df['Movie'], columns=movies_df['Movie'])
+
+def recommend_content_based(movie, num_recommendations=2):
+    # Get similarity scores for the movie
+    sim_scores = cosine_sim_df[movie].sort_values(ascending=False)
+    sim_scores = sim_scores.drop(movie)  # Exclude the movie itself
+    return sim_scores.head(num_recommendations)
+
+# Content-based recommendation for a movie
+print("\nContent-Based Recommendation for 'Inception':")
+print(recommend_content_based('Inception'))
